@@ -78,13 +78,18 @@ def restore_folder(bucket_name, prefix):
     versions = []
     count = 0
     bucket = conn.get_bucket(bucket_name)
-    for version in bucket.list_versions():
+    for version in bucket.list_versions(prefix=prefix):
         versions.append(version)
     for version in versions:
         count += 1
         if isinstance(version, deletemarker.DeleteMarker) and version.is_latest:
             key = versions[count]
-            if key.key.startswith(prefix):
+            if hasattr(key, 'key'):
+                has_prefix = key.key.startswith(prefix)
+            else:
+                has_prefix = key.name.startswith(prefix)
+
+            if has_prefix:
                 bucket.delete_key(version.name, version_id=version.version_id)
     print('Folder \'{}\' restored from \'{}\'.'.format(prefix, bucket_name))
 
